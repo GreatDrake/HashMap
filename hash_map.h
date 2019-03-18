@@ -21,7 +21,7 @@ private:
     vector<Bucket> table;
     vector<char> deleted;
     list<Element> elements;
-    size_t cnt, table_sz;
+    size_t elements_cnt, table_sz;
     Hash hasher;
 
 public:
@@ -29,17 +29,17 @@ public:
     using const_iterator = typename list<Element>::const_iterator;
 
     size_t size() const {
-        return cnt;
+        return elements_cnt;
     }
 
     bool empty() const {
-        return cnt == 0;
+        return elements_cnt == 0;
     }
 
     void resize(size_t new_sz) {
         vector<Element> to_move(elements.begin(), elements.end());
         table_sz = new_sz;
-        cnt = 0;
+        elements_cnt = 0;
         elements.clear();
         table.assign(table_sz, elements.end());
         deleted.assign(table_sz, 0);
@@ -48,39 +48,39 @@ public:
     }
 
     iterator insert(const Element& elem) {
-        if ((cnt + 1) * MAX_LOAD > table_sz)
+        if ((elements_cnt + 1) * MAX_LOAD > table_sz)
             resize(table_sz * 2);
         size_t bucket = hasher(elem.first) % table_sz;
-        for (size_t i = bucket;; ++i) {
-            if (i == table_sz)
-                i = 0;
-            if (table[i] != elements.end() && table[i]->first == elem.first)
+        for (size_t bucket_idx = bucket;; ++bucket_idx) {
+            if (bucket_idx == table_sz)
+                bucket_idx = 0;
+            if (table[bucket_idx] != elements.end() && table[bucket_idx]->first == elem.first)
                 return elements.end();
-            if (table[i] == elements.end()) {
+            if (table[bucket_idx] == elements.end()) {
                 elements.push_back(elem);
                 auto it = elements.end();
                 --it;
-                table[i] = it;
-                ++cnt;
-                return table[i];
+                table[bucket_idx] = it;
+                ++elements_cnt;
+                return table[bucket_idx];
             }
         }
     }
 
     void erase(const KeyType& key) {
-        if (table_sz > DEFAULT_SIZE && (cnt - 1) * MIN_LOAD < table_sz)
+        if (table_sz > DEFAULT_SIZE && (elements_cnt - 1) * MIN_LOAD < table_sz)
             resize(table_sz / 2);
         size_t bucket = hasher(key) % table_sz;
-        for (size_t i = bucket;; ++i) {
-            if (i == table_sz)
-                i = 0;
-            if (deleted[i] == 0 && table[i] == elements.end())
+        for (size_t bucket_idx = bucket;; ++bucket_idx) {
+            if (bucket_idx == table_sz)
+                bucket_idx = 0;
+            if (deleted[bucket_idx] == 0 && table[bucket_idx] == elements.end())
                 break;
-            if (table[i] != elements.end() && table[i]->first == key) {
-                deleted[i] = 1;
-                elements.erase(table[i]);
-                table[i] = elements.end();
-                --cnt;
+            if (table[bucket_idx] != elements.end() && table[bucket_idx]->first == key) {
+                deleted[bucket_idx] = 1;
+                elements.erase(table[bucket_idx]);
+                table[bucket_idx] = elements.end();
+                --elements_cnt;
                 break;
             }
         }
@@ -92,7 +92,7 @@ public:
 
     HashMap(Hash t_hasher = Hash()) : hasher(t_hasher) {
         table_sz = DEFAULT_SIZE;
-        cnt = 0;
+        elements_cnt = 0;
         table.assign(table_sz, elements.end());
         deleted.resize(table_sz);
     }
@@ -127,7 +127,7 @@ public:
 
     void clear() {
         table_sz = DEFAULT_SIZE;
-        cnt = 0;
+        elements_cnt = 0;
         elements.clear();
         table.assign(table_sz, elements.end());
         deleted.assign(table_sz, 0);
@@ -151,49 +151,49 @@ public:
 
     iterator find(const KeyType& key) {
         size_t bucket = hasher(key) % table_sz;
-        for (size_t i = bucket;; ++i) {
-            if (i == table_sz)
-                i = 0;
-            if (deleted[i] == 0 && table[i] == elements.end())
+        for (size_t bucket_idx = bucket;; ++bucket_idx) {
+            if (bucket_idx == table_sz)
+                bucket_idx = 0;
+            if (deleted[bucket_idx] == 0 && table[bucket_idx] == elements.end())
                 return elements.end();
-            if (table[i] != elements.end() && table[i]->first == key)
-                return table[i];
+            if (table[bucket_idx] != elements.end() && table[bucket_idx]->first == key)
+                return table[bucket_idx];
         }
     }
 
     const_iterator find(const KeyType& key) const {
         size_t bucket = hasher(key) % table_sz;
-        for (size_t i = bucket;; ++i) {
-            if (i == table_sz)
-                i = 0;
-            if (deleted[i] == 0 && table[i] == elements.end())
+        for (size_t bucket_idx = bucket;; ++bucket_idx) {
+            if (bucket_idx == table_sz)
+                bucket_idx = 0;
+            if (deleted[bucket_idx] == 0 && table[bucket_idx] == elements.end())
                 return elements.end();
-            if (table[i] != elements.end() && table[i]->first == key)
-                return table[i];
+            if (table[bucket_idx] != elements.end() && table[bucket_idx]->first == key)
+                return table[bucket_idx];
         }
     }
 
     const ValueType& at(const KeyType& key) const {
         size_t bucket = hasher(key) % table_sz;
-        for (size_t i = bucket;; ++i) {
-            if (i == table_sz)
-                i = 0;
-            if (deleted[i] == 0 && table[i] == elements.end())
+        for (size_t bucket_idx = bucket;; ++bucket_idx) {
+            if (bucket_idx == table_sz)
+                bucket_idx = 0;
+            if (deleted[bucket_idx] == 0 && table[bucket_idx] == elements.end())
                 throw std::out_of_range("Key does not exist");
-            if (table[i] != elements.end() && table[i]->first == key)
-                return table[i]->second;
+            if (table[bucket_idx] != elements.end() && table[bucket_idx]->first == key)
+                return table[bucket_idx]->second;
         }
     }
 
     ValueType& operator[](const KeyType& key) {
         size_t bucket = hasher(key) % table_sz;
-        for (size_t i = bucket;; ++i) {
-            if (i == table_sz)
-                i = 0;
-            if (deleted[i] == 0 && table[i] == elements.end())
+        for (size_t bucket_idx = bucket;; ++bucket_idx) {
+            if (bucket_idx == table_sz)
+                bucket_idx = 0;
+            if (deleted[bucket_idx] == 0 && table[bucket_idx] == elements.end())
                 return insert({key, ValueType()})->second;
-            if (table[i] != elements.end() && table[i]->first == key)
-                return table[i]->second;
+            if (table[bucket_idx] != elements.end() && table[bucket_idx]->first == key)
+                return table[bucket_idx]->second;
         }
     }
 };
