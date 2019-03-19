@@ -12,6 +12,7 @@ using std::initializer_list;
 const size_t MAX_LOAD = 2;
 const size_t MIN_LOAD = 6;
 const size_t DEFAULT_SIZE = 17;
+const size_t RESIZE_FACTOR = 2;
 
 template<class KeyType, class ValueType, class Hash = std::hash<KeyType> > class HashMap {
 private:
@@ -49,7 +50,7 @@ public:
 
     iterator insert(const Element& elem) {
         if ((elements_cnt + 1) * MAX_LOAD > table_sz)
-            resize(table_sz * 2);
+            resize(table_sz * RESIZE_FACTOR);
         size_t bucket = hasher(elem.first) % table_sz;
         for (size_t bucket_idx = bucket;; ++bucket_idx) {
             if (bucket_idx == table_sz)
@@ -69,7 +70,7 @@ public:
 
     void erase(const KeyType& key) {
         if (table_sz > DEFAULT_SIZE && (elements_cnt - 1) * MIN_LOAD < table_sz)
-            resize(table_sz / 2);
+            resize(table_sz / RESIZE_FACTOR);
         size_t bucket = hasher(key) % table_sz;
         for (size_t bucket_idx = bucket;; ++bucket_idx) {
             if (bucket_idx == table_sz)
